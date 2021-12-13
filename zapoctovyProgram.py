@@ -1,6 +1,13 @@
 from math import sin, cos, radians
 
+
+class MatrixException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class Matrix():
+
     def __init__(self, dims = [0, 0], matrix = [[]]):
 
         if dims:
@@ -14,13 +21,24 @@ class Matrix():
         self.transposed = None
         self.rank = None
         self.inverse = None
+        self.determinantVal = None
 
 
     def fill_with_ones(self):
-        pass
+        self.matrix = [[0 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
 
     def fill_with_zeros(self):
-        pass
+        self.matrix = [[1 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
+
+    def id(self):
+        if self.__is_square():
+            self.fill_with_zeros
+            for i in range(self.dims[0]):
+                self.matrix[i][i] = 1
+
+        else:
+            print('Matica nie je stvorcova...')
+
 
 
 
@@ -92,6 +110,30 @@ class Matrix():
 
         pass
 
+    def determinant(self = None, matrix = None):
+
+        if not self.determinantVal:
+            if not matrix:
+                matrix = self.matrix
+
+            if Matrix.is_square(matrix = matrix):
+
+                if len(matrix) == 1:
+                    return matrix[0][0]
+
+                else:
+                    output = 0
+                    for idx, elements in enumerate(matrix[0]):
+                        output += matrix[0][idx] * Matrix.determinant(matrix = Matrix.submatrix(matrix, idx)) * (-1)**idx
+
+                    return output
+
+        else:
+            return self.determinantVal
+
+    def submatrix(matrix, forbiden_col):
+        return [[i for col, i in enumerate(matrix[row]) if col != forbiden_col] for row in range(1, len(matrix))]
+
 
     def get_dims(self) -> list:
         return self.dims
@@ -145,6 +187,17 @@ class Matrix():
         self.inverse = None
         self.transposed = None
         self.dims = None
+        self.determinantVal = None
+
+    def is_square(self = None, matrix = None):
+        if matrix:
+            return len(matrix) == len(matrix[0])
+
+        else:
+            if self.matrix:
+                return self.dims[0] == self.dims[1]
+            else:
+                raise MatrixException('Unable to operate on empty matrix...')
 
 
 
