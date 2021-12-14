@@ -11,7 +11,7 @@ class Matrix():
     def __init__(self, dims = [0, 0], matrix = [[]]):
 
         if dims:
-            self.dims = dims
+            self.dims = None
         else:
             self.__set_dims()
 
@@ -27,8 +27,10 @@ class Matrix():
     def fill_with_ones(self):
         self.matrix = [[0 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
 
+
     def fill_with_zeros(self):
         self.matrix = [[1 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
+
 
     def id(self):
         if self.__is_square():
@@ -86,13 +88,13 @@ class Matrix():
         if self.transposed:
             return
         else:
-            self.__is_matrix()
-            transposed_matrix = [[] for i in range(len(self.matrix[0]))]
-            for raw in self.matrix:
-                for col_idx, element in enumerate(raw):
-                    transposed_matrix[col_idx].append(element)
+            if self.__is_matrix():
+                transposed_matrix = [[] for i in range(len(self.matrix[0]))]
+                for raw in self.matrix:
+                    for col_idx, element in enumerate(raw):
+                        transposed_matrix[col_idx].append(element)
 
-            self.transposed = transposed_matrix
+                self.transposed = transposed_matrix
 
 
     def rank_calculate(self) -> int:
@@ -105,58 +107,150 @@ class Matrix():
 
     def solve(self, extended = True, vector = None) -> list: #returns vector
 
+        if self.__get_determinant() == 0:
+            print('Nonregular matrix... infinite solution set')
+            return
+
         if not extended:
             self.extend(vector)
 
-        pass
+        for col in range(len(self.matrix[0])):
+            pivot_pos = None
+            for row in range(col, len(self.matrix)):
+                if self.matrix[row][col] == 0:
+                    continue
+                else:
+                    if pivot_pos == None:
+                        pivot_pos = row
+                        continue
+
+                    self.add_scalar_mul2row(pivot_pos, row, -(self.matrix[row][col]/self.matrix[pivot_pos][col]))
+
+        for row in range(len(self.matrix)):
+            self.multiply_row(row, 1/self.matrix[row][row])
+
+
+
+
+    def multiply_row(self, index, scalar):
+        for col in range(self.get_dims()[0]):
+            self.matrix[index][col] *= scalar
+
+    def add_scalar_mul2row(self, source_row, target_row, scalar):
+        for col in range(self.get_dims()[0]):
+            self.matrix[target_row][col] += self.matrix[source_row][col] * scalar
+
+
 
     def determinant(self = None, matrix = None):
 
-        if not self.determinantVal:
-            if not matrix:
+        if self:
+            if self.matrix:
                 matrix = self.matrix
-
-            if Matrix.is_square(matrix = matrix):
-
-                if len(matrix) == 1:
-                    return matrix[0][0]
-
-                else:
-                    output = 0
-                    for idx, elements in enumerate(matrix[0]):
-                        output += matrix[0][idx] * Matrix.determinant(matrix = Matrix.submatrix(matrix, idx)) * (-1)**idx
-
-                    return output
+            elif matrix:
+                pass
+            else:
+                raise MatrixException('No matrix was providet for determinant calculation...')
 
         else:
-            return self.determinantVal
+            if matrix:
+                pass
+            else:
+                raise MatrixException('No matrix was providet for determinant calculation...')
+
+
+        if Matrix.is_square(matrix = matrix):
+
+            if len(matrix) == 1:
+                return matrix[0][0]
+
+            else:
+                output = 0
+                for idx, elements in enumerate(matrix[0]):
+                    output += matrix[0][idx] * Matrix.determinant(matrix = Matrix.submatrix(matrix, idx)) * (-1)**idx
+
+                return output
+
+
 
     def submatrix(matrix, forbiden_col):
         return [[i for col, i in enumerate(matrix[row]) if col != forbiden_col] for row in range(1, len(matrix))]
 
 
+    def add(self, matrix):
+        if isinstance(matrix, Matrix):
+            matrix2 = matrix.matrix
+        elif isinstance(list):
+            pass
+        else:
+            raise MatrixException('Unsapported data format')
+
+        matrix1 = self.matrix
+        return [[matrix1[row][col] + matrix2[row][col] for col in range(len(matrix1[0]))] for row in range(len(matrix1))]
+
+
+
+    def add2(matrix1, matrix2):
+        if isinstance(matrix1, Matrix) and isinstance(matrix2, Matrix):
+            if matrix1.get_dims() == matrix2.get_dims() and matrix1.get_dims() != [0, 0]:
+
+                matrix1 = matrix1.matrix
+                matrix2 = matrix2.matrix
+                return Matrix(matrix = [[matrix1[row][col] + matrix2[row][col] for col in range(len(matrix1[0]))] for row in range(len(matrix1))])
+
+            else:
+                raise MatrixException('Additing matrices should be of the same size and not empty')
+
+        elif isinstance(matrix1, list) and isinstance(matrix1, list):
+            if len(matrix1) == len(matrix2) and len(matrix1[0]) == len(matrix2[0]) and len(matrix1[0] != 0):
+                return [[matrix1[row][col] + matrix2[row][col] for col in range(len(matrix1[0]))] for row in range(len(matrix1))]
+
+            else:
+                raise MatrixException('Additing matrices should be of the same size and not empty')
+
+
+        else:
+            raise MatrixException('addition objects should be of the same instance (Matrix or list)')
+
+
     def get_dims(self) -> list:
-        return self.dims
+        if self.dims:
+            return self.dims
+
+        else:
+            self.__set_dims()
+            return self.dims
 
 
     def get_matrix(self) -> list:
         return self.matrix
 
 
-    def print_matrix(self):
-        pass
+    def print_matrix(self) -> None:
+        for row in self.matrix:
+            for element in row:
+                print(element, end=' ')
+
+            print(end='\n')
 
 
     def __is_vector(self) -> bool:
         return self.dims[1] == 1
 
 
-    def __is2d(self):
+    def __is2d(self) -> bool:
         return self.dims[0] == 2
 
 
-    def __is3d(self):
+    def __is3d(self) -> bool:
         return self.dims[1] == 3
+
+    def __get_determinant(self):
+        if self.determinantVal:
+            return self.determinantVal
+        else:
+            self.determinant()
+
 
 
     def __vector_multiplication(self, vector1, vector2):
@@ -178,8 +272,12 @@ class Matrix():
     def __set_dims(self):
 
         if self.__is_matrix():
+            if not self.dims:
+                self.dims = [0, 0]
+
             self.dims[0] = len(self.matrix)
             self.dims[1] = len(self.matrix[0])
+
 
 
     def __reset(self):
@@ -188,6 +286,7 @@ class Matrix():
         self.transposed = None
         self.dims = None
         self.determinantVal = None
+
 
     def is_square(self = None, matrix = None):
         if matrix:
@@ -222,5 +321,5 @@ class Matrix():
                 pass
 
             else:
-                print('not supported')
+                raise MatrixException('only 2d and 3d space rotation is supported')
 
