@@ -45,8 +45,9 @@ class Matrix():
 
 
 
-    def multiply_with_saving(self, other):
-        if other.dims[1] == self.dims[0]:
+    def multiply_with_saving(self, other: object):
+
+        if other.get_dims()[1] == self.get_dims()[0]:
             output_matrix = []
             if not other.transposed:
                 other.transpose()
@@ -54,7 +55,7 @@ class Matrix():
             for idx, raw in enumerate(self.matrix):
                 output_matrix.append([])
 
-                for column in self.transposed:
+                for column in other.transposed:
                     output_matrix[idx].append(self.__vector_multiplication(raw, column))
 
         self.matrix = output_matrix
@@ -65,7 +66,7 @@ class Matrix():
 
 
     def multiply_without_saving(self, other):
-        if other.dims[1] == self.dims[0]:
+        if other.get_dims()[1] == self.get_dims[0]:
             output_matrix = []
             if not other.transposed:
                 other.transpose()
@@ -101,20 +102,27 @@ class Matrix():
         pass
 
 
-    def extend(self, vector: list):
-        pass
+    def extend(self, matrix: list):
+        for idx, row in enumerate(matrix):
+            for element in row:
+                self.matrix[idx].append(element)
 
 
-    def solve(self, extended = True, vector = None) -> list: #returns vector
+    def solve(self, extended = True, ext_matrix = None) -> list: #returns vector
 
         if self.__get_determinant() == 0:
             print('Nonregular matrix... infinite solution set')
             return
 
         if not extended:
-            self.extend(vector)
+            if ext_matrix:
+                self.extend(ext_matrix)
+                self.__set_dims()
 
-        for col in range(len(self.matrix[0])):
+            else:
+                raise MatrixException('No matrix extension provided')
+
+        for col in range(len(self.matrix[0])): # gause elimination
             pivot_pos = None
             for row in range(col, len(self.matrix)):
                 if self.matrix[row][col] == 0:
@@ -126,20 +134,36 @@ class Matrix():
 
                     self.add_scalar_mul2row(pivot_pos, row, -(self.matrix[row][col]/self.matrix[pivot_pos][col]))
 
-        for row in range(len(self.matrix)):
+
+        for row in range(len(self.matrix)): # setting all pivots to have vale 1
             self.multiply_row(row, 1/self.matrix[row][row])
+
+        for col in range(self.get_dims()[0] - 1, -1, -1): # G-J eliomination
+            for row in range(col - 1, -1, -1):
+                self.add_scalar_mul2row(col, row, -self.matrix[row][col])
+
+        return [[self.matrix[row][col] for col in range(self.get_dims()[0], len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
 
 
 
 
     def multiply_row(self, index, scalar):
-        for col in range(self.get_dims()[0]):
+        for col in range(self.get_dims()[1]):
             self.matrix[index][col] *= scalar
 
     def add_scalar_mul2row(self, source_row, target_row, scalar):
-        for col in range(self.get_dims()[0]):
+        for col in range(self.get_dims()[1]):
             self.matrix[target_row][col] += self.matrix[source_row][col] * scalar
 
+
+    def row_pivot_position(self, row):
+        for i in range(len(row)):
+            if row[i] == 0:
+                continue
+            else:
+                return i
+
+        return None
 
 
     def determinant(self = None, matrix = None):
@@ -229,7 +253,7 @@ class Matrix():
     def print_matrix(self) -> None:
         for row in self.matrix:
             for element in row:
-                print(element, end=' ')
+                print(round(element, 2), end=' ')
 
             print(end='\n')
 
