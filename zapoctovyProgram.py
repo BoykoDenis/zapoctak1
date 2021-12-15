@@ -22,6 +22,8 @@ class Matrix():
         self.rank = None
         self.inverse = None
         self.determinantVal = None
+        self.RREF = None # Reduced Row Echelon Forms -> output of Gause-Jordan elimination
+        self.REF = None # Row Echelon Forms -> output of Gause elimination
 
 
     def fill_with_ones(self):
@@ -89,7 +91,7 @@ class Matrix():
         if self.transposed:
             return
         else:
-            if self.__is_matrix():
+            if self.is_matrix():
                 transposed_matrix = [[] for i in range(len(self.matrix[0]))]
                 for raw in self.matrix:
                     for col_idx, element in enumerate(raw):
@@ -102,10 +104,17 @@ class Matrix():
         pass
 
 
-    def extend(self, matrix: list):
-        for idx, row in enumerate(matrix):
-            for element in row:
-                self.matrix[idx].append(element)
+    def extend(self, matrix): # extendes matrix by vector or matrix from the right side
+
+        if isinstance(matrix, Matrix):
+            matrix = matrix.matrix
+        if len(matrix) == len(self.matrix):
+            for idx, row in enumerate(matrix):
+                for element in row:
+                    self.matrix[idx].append(element)
+
+        else:
+            raise MatrixException('Extention matrix sholud have the same amount of rows as the extended matrix')
 
 
     def solve(self, extended = True, ext_matrix = None) -> list: #returns vector
@@ -122,38 +131,52 @@ class Matrix():
             else:
                 raise MatrixException('No matrix extension provided')
 
-        for col in range(len(self.matrix[0])): # gause elimination
+        self.gaus_jordan_elimination()
+
+
+        return [[self.RREF[row][col] for col in range(self.get_dims()[0], len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
+
+    def gaus_elimination(self):
+
+        self.REF = self.matrix
+        for col in range(len(self.REF[0])): # gause elimination
             pivot_pos = None
-            for row in range(col, len(self.matrix)):
-                if self.matrix[row][col] == 0:
+            for row in range(col, len(self.REF)):
+                if self.REF[row][col] == 0:
                     continue
                 else:
                     if pivot_pos == None:
                         pivot_pos = row
                         continue
 
-                    self.add_scalar_mul2row(pivot_pos, row, -(self.matrix[row][col]/self.matrix[pivot_pos][col]))
+                    self.REF = Matrix.add_scalar_mul2row(self.REF, pivot_pos, row, -(self.REF[row][col]/self.REF[pivot_pos][col]))
 
 
-        for row in range(len(self.matrix)): # setting all pivots to have vale 1
-            self.multiply_row(row, 1/self.matrix[row][row])
+    def gaus_jordan_elimination(self):
+
+        self.gaus_elimination()
+        self.RREF = self.REF
+        for row in range(len(self.RREF)): # setting all pivots to have value 1
+            self.RREF = Matrix.multiply_row(self.RREF, row, 1/self.RREF[row][row])
 
         for col in range(self.get_dims()[0] - 1, -1, -1): # G-J eliomination
             for row in range(col - 1, -1, -1):
-                self.add_scalar_mul2row(col, row, -self.matrix[row][col])
-
-        return [[self.matrix[row][col] for col in range(self.get_dims()[0], len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
+                self.RREF =Matrix.add_scalar_mul2row(self.RREF, col, row, -self.RREF[row][col])
 
 
 
 
-    def multiply_row(self, index, scalar):
-        for col in range(self.get_dims()[1]):
-            self.matrix[index][col] *= scalar
 
-    def add_scalar_mul2row(self, source_row, target_row, scalar):
-        for col in range(self.get_dims()[1]):
-            self.matrix[target_row][col] += self.matrix[source_row][col] * scalar
+
+    def multiply_row(matrix, index, scalar): #elementary row operation (multiplies i-th row with scalar)
+        for col in range(Matrix.get_dims(matrix = matrix)[1]):
+            matrix[index][col] *= scalar
+        return matrix
+
+    def add_scalar_mul2row(matrix, source_row, target_row, scalar): #elementary row operation (adds scalar multiplication of i-th row to j-th row)
+        for col in range(Matrix.get_dims(matrix = matrix)[1]):
+            matrix[target_row][col] += matrix[source_row][col] * scalar
+        return matrix
 
 
     def row_pivot_position(self, row):
@@ -197,7 +220,7 @@ class Matrix():
 
 
 
-    def submatrix(matrix, forbiden_col):
+    def submatrix(matrix, forbiden_col): # support function for determinant calculation (returns matrix of size n-1 x m-1) removes first raw and i-th column
         return [[i for col, i in enumerate(matrix[row]) if col != forbiden_col] for row in range(1, len(matrix))]
 
 
@@ -237,13 +260,20 @@ class Matrix():
             raise MatrixException('addition objects should be of the same instance (Matrix or list)')
 
 
-    def get_dims(self) -> list:
-        if self.dims:
-            return self.dims
+    def get_dims(self = None, matrix = None) -> list:
+        if self:
+            if self.dims:
+                return self.dims
+
+            else:
+                self.__set_dims()
+                return self.dims
+
+        elif matrix:
+            return [len(matrix), len(matrix[0])]
 
         else:
-            self.__set_dims()
-            return self.dims
+            raise MatrixException('No object nor matrix were provided...')
 
 
     def get_matrix(self) -> list:
@@ -273,7 +303,8 @@ class Matrix():
         if self.determinantVal:
             return self.determinantVal
         else:
-            self.determinant()
+            self.determinantVal = self.determinant()
+            return self.determinantVal
 
 
 
@@ -285,17 +316,19 @@ class Matrix():
         return scalar
 
 
-    def __is_matrix(self, other = None) -> bool:
+    def is_matrix(self = None, other = None) -> bool:
 
         if other:
             return len(other.matrix[0]) != 0
-        else:
+        elif self:
             return len(self.matrix[0]) != 0
+        else:
+            raise MatrixException('No object nor matrix were provided...')
 
 
     def __set_dims(self):
 
-        if self.__is_matrix():
+        if self.is_matrix():
             if not self.dims:
                 self.dims = [0, 0]
 
@@ -318,7 +351,7 @@ class Matrix():
 
         else:
             if self.matrix:
-                return self.dims[0] == self.dims[1]
+                return self.get_dims()[0] == self.get_dims()[1]
             else:
                 raise MatrixException('Unable to operate on empty matrix...')
 
