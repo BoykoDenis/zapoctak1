@@ -8,15 +8,16 @@ class MatrixException(Exception):
 
 class Matrix():
 
-    def __init__(self, dims = [0, 0], matrix = [[]]):
+    def __init__(self, dims = None, matrix = [[]]):
+
+        self.dims = dims
+        self.matrix = matrix
 
         if dims:
-            self.dims = None
+            self.dims = dims
         else:
             self.__set_dims()
 
-        if matrix:
-            self.matrix = matrix
 
         self.transposed = None
         self.rank = None
@@ -27,17 +28,17 @@ class Matrix():
 
 
     def fill_with_ones(self):
-        self.matrix = [[0 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
+        self.matrix = [[1 for _ in range(self.get_dims()[1])] for _ in range(self.get_dims()[0])]
 
 
     def fill_with_zeros(self):
-        self.matrix = [[1 for _ in range(self.dims[1])] for _ in range(self.dims[0])]
+        self.matrix = [[0 for _ in range(self.get_dims()[1])] for _ in range(self.get_dims()[0])]
 
 
     def id(self):
-        if self.__is_square():
-            self.fill_with_zeros
-            for i in range(self.dims[0]):
+        if self.is_square():
+            self.fill_with_zeros()
+            for i in range(self.get_dims()[0]):
                 self.matrix[i][i] = 1
 
         else:
@@ -68,7 +69,7 @@ class Matrix():
 
 
     def multiply_without_saving(self, other):
-        if other.get_dims()[1] == self.get_dims[0]:
+        if other.get_dims()[1] == self.get_dims()[0]:
             output_matrix = []
             if not other.transposed:
                 other.transpose()
@@ -83,7 +84,10 @@ class Matrix():
 
 
     def calculate_inverse(self) -> list:
-        pass
+        idm = Matrix(dims=[len(self.matrix), len(self.matrix)])
+        idm.id()
+        self.inverse = self.solve(extended=False, ext_matrix = idm.get_matrix())
+        return self.inverse
 
 
     def transpose(self):
@@ -125,20 +129,22 @@ class Matrix():
 
         if not extended:
             if ext_matrix:
-                self.extend(ext_matrix)
                 self.__set_dims()
+                self.extend(ext_matrix)
+
 
             else:
                 raise MatrixException('No matrix extension provided')
 
         self.gaus_jordan_elimination()
 
-
-        return [[self.RREF[row][col] for col in range(self.get_dims()[0], len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
+        self.matrix = [self.matrix[i][:self.get_dims()[1]] for i in range(self.get_dims()[0])]
+        output = [[round(self.RREF[row][col], 5) for col in range(self.get_dims()[1], self.get_dims()[1] + len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
+        return output
 
     def gaus_elimination(self):
 
-        self.REF = self.matrix
+        self.REF = [[self.matrix[row][col] for col in range(len(self.matrix[0]))] for row in range(len(self.matrix))]#self.matrix.copy()
         for col in range(len(self.REF[0])): # gause elimination
             pivot_pos = None
             for row in range(col, len(self.REF)):
@@ -155,13 +161,13 @@ class Matrix():
     def gaus_jordan_elimination(self):
 
         self.gaus_elimination()
-        self.RREF = self.REF
+        self.RREF = [[self.REF[row][col] for col in range(len(self.REF[0]))] for row in range(len(self.REF))]#self.matrix.copy()
         for row in range(len(self.RREF)): # setting all pivots to have value 1
             self.RREF = Matrix.multiply_row(self.RREF, row, 1/self.RREF[row][row])
 
         for col in range(self.get_dims()[0] - 1, -1, -1): # G-J eliomination
             for row in range(col - 1, -1, -1):
-                self.RREF =Matrix.add_scalar_mul2row(self.RREF, col, row, -self.RREF[row][col])
+                self.RREF = Matrix.add_scalar_mul2row(self.RREF, col, row, -self.RREF[row][col])
 
 
 
@@ -169,41 +175,43 @@ class Matrix():
 
 
     def multiply_row(matrix, index, scalar): #elementary row operation (multiplies i-th row with scalar)
+        if isinstance(matrix, Matrix):
+            matrix = matrix.matrix
         for col in range(Matrix.get_dims(matrix = matrix)[1]):
             matrix[index][col] *= scalar
-        return matrix
+        if isinstance(matrix, Matrix):
+            return Matrix(matrix = matrix)
+        else:
+            return matrix
+
 
     def add_scalar_mul2row(matrix, source_row, target_row, scalar): #elementary row operation (adds scalar multiplication of i-th row to j-th row)
+        if isinstance(matrix, Matrix):
+            matrix = matrix.matrix
         for col in range(Matrix.get_dims(matrix = matrix)[1]):
             matrix[target_row][col] += matrix[source_row][col] * scalar
-        return matrix
+        if isinstance(matrix, Matrix):
+            return Matrix(matrix = matrix)
+        else:
+            return matrix
 
-
-    def row_pivot_position(self, row):
-        for i in range(len(row)):
-            if row[i] == 0:
-                continue
-            else:
-                return i
-
-        return None
 
 
     def determinant(self = None, matrix = None):
 
         if self:
-            if self.matrix:
+            if self.matrix != [[]]:
                 matrix = self.matrix
             elif matrix:
                 pass
             else:
-                raise MatrixException('No matrix was providet for determinant calculation...')
+                raise MatrixException('No matrix was provided for determinant calculation...')
 
         else:
             if matrix:
                 pass
             else:
-                raise MatrixException('No matrix was providet for determinant calculation...')
+                raise MatrixException('No matrix was provided for determinant calculation...')
 
 
         if Matrix.is_square(matrix = matrix):
@@ -216,6 +224,8 @@ class Matrix():
                 for idx, elements in enumerate(matrix[0]):
                     output += matrix[0][idx] * Matrix.determinant(matrix = Matrix.submatrix(matrix, idx)) * (-1)**idx
 
+                if self:
+                    self.determinantVal = output
                 return output
 
 
@@ -283,7 +293,7 @@ class Matrix():
     def print_matrix(self) -> None:
         for row in self.matrix:
             for element in row:
-                print(round(element, 2), end=' ')
+                print(round(element, 1), end=' ')
 
             print(end='\n')
 
@@ -295,9 +305,6 @@ class Matrix():
     def __is2d(self) -> bool:
         return self.dims[0] == 2
 
-
-    def __is3d(self) -> bool:
-        return self.dims[1] == 3
 
     def __get_determinant(self):
         if self.determinantVal:
@@ -319,9 +326,12 @@ class Matrix():
     def is_matrix(self = None, other = None) -> bool:
 
         if other:
-            return len(other.matrix[0]) != 0
+            if isinstance(other, Matrix):
+                return len(other.get_matrix()[0]) != 0
+            else:
+                return len(other[0]) != 0
         elif self:
-            return len(self.matrix[0]) != 0
+            return len(self.get_matrix()[0]) != 0
         else:
             raise MatrixException('No object nor matrix were provided...')
 
@@ -329,11 +339,11 @@ class Matrix():
     def __set_dims(self):
 
         if self.is_matrix():
-            if not self.dims:
-                self.dims = [0, 0]
-
+            self.dims = [0, 0]
             self.dims[0] = len(self.matrix)
             self.dims[1] = len(self.matrix[0])
+
+
 
 
 
@@ -371,12 +381,10 @@ class Matrix():
                                              )
 
                 self.matrix = self.rotation_matrix.multiply_without_saving(self.matrix)
+                self.__reset()
 
-
-
-            elif self.__is3d():
-                pass
 
             else:
-                raise MatrixException('only 2d and 3d space rotation is supported')
+                raise MatrixException('only 2d space rotation is supported')
+
 

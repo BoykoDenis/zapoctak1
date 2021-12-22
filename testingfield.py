@@ -7,10 +7,9 @@ matrix1 = zp.Matrix(matrix = [[1, 2, 3, 1, 3, 4],
                               [0, 2, 4, 5, 0, 4],
                               [0, 3, 7, 8, 5, 4]])
 
-matrix3 = zp.Matrix(matrix=[[2, 1, 0, 0],
-                            [1, 2, 1, 0],
-                            [0, 1, 2, 1],
-                            [0, 0, 1, 2]])
+matrix3 = zp.Matrix(matrix=[[2, 1, -1],
+                            [1, 1, -1],
+                            [0, 0, 1]])
 
 matrix2 = zp.Matrix(matrix = [[1, 2, 3, 4],
                               [8, 5, 6, 3],
@@ -19,13 +18,15 @@ matrix4 = zp.Matrix(matrix=[[0.8, -0.6, 0.4, -0.2],
                             [-0.6, 1.2, -0.8, 0.4],
                             [0.4, -0.8, 1.2, -0.6],
                             [-0.2, 0.4, -0.6, 0.8]])
-
-matrix3.multiply_with_saving(matrix4)
-matrix3.print_matrix()
-
-
-matrix3.solve(extended=False, ext_matrix=[[1, 0, 0, 0],
-                                          [0, 1, 0, 0],
-                                          [0, 0, 1, 0],
-                                          [0, 0, 0, 1]])
-matrix3.print_matrix()
+#print(matrix3.matrix)
+inverse = matrix1.calculate_inverse()
+##matrix3.print_matrix()
+#print(inverse)
+matrix1inv = zp.Matrix(matrix= inverse)
+matrix1inv.print_matrix()
+matrix1.print_matrix()
+matrix1.multiply_with_saving(matrix1inv)
+matrix1.print_matrix()
+#matrix3inv.print_matrix()
+#out = zp.Matrix.multiply_without_saving(matrix3, matrix3inv)
+#print(out)
