@@ -417,14 +417,14 @@ class Matrix():
 
 
         Args:
-            self ([object], optional): [description]. Defaults to None.
-            matrix ([list], optional): [description]. Defaults to None.
+            self ([object], optional): [matrix object, if not provided the matrix parameter will be taken]. Defaults to None.
+            matrix ([list], optional): [matrix if self is not provided]. Defaults to None.
 
         Raises:
-            MatrixException: [description]
+            MatrixException: [if self nor matrix were provided]
 
         Returns:
-            list: [description]
+            list: [dimmensions of matrix]
         """
         if self:
             if self.dims:
@@ -443,21 +443,19 @@ class Matrix():
 
     def get_matrix(self) -> list:
         """
-        get_matrix [summary]
+        get_matrix [returns the matrix of the object in list]
 
-        [extended_summary]
 
         Returns:
-            list: [description]
+            list: [self.matrix]
         """
         return self.matrix
 
 
     def print_matrix(self) -> None:
         """
-        print_matrix [summary]
+        print_matrix [prints matrix without list breakets]
 
-        [extended_summary]
         """
         for row in self.matrix:
             for element in row:
@@ -468,36 +466,32 @@ class Matrix():
 
     def __is_vector(self) -> bool:
         """
-        __is_vector [summary]
+        __is_vector [returns if the matrix of object is vector]
 
-        [extended_summary]
 
         Returns:
-            bool: [description]
+            bool: [is or is not vector]
         """
         return self.dims[1] == 1
 
 
     def __is2d(self) -> bool:
         """
-        __is2d [summary]
-
-        [extended_summary]
+        __is2d [returns if the matrix of object has dims 2x2]
 
         Returns:
-            bool: [description]
+            bool: [is square]
         """
         return self.dims[0] == 2
 
 
     def __get_determinant(self):
         """
-        __get_determinant [summary]
+        __get_determinant [returns tederminant value if it was previouslu calculated, if not it will calculate it and then return]
 
-        [extended_summary]
 
         Returns:
-            [type]: [description]
+            float: [determinant value]
         """
         if self.determinantVal:
             return self.determinantVal
@@ -509,16 +503,14 @@ class Matrix():
 
     def __vector_multiplication(self, vector1, vector2):
         """
-        __vector_multiplication [summary]
-
-        [extended_summary]
+        __vector_multiplication [scalar multiplication of 2 vectors]
 
         Args:
-            vector1 ([type]): [description]
-            vector2 ([type]): [description]
+            vector1 ([list]):
+            vector2 ([list]):
 
         Returns:
-            [type]: [description]
+            [float]: [scalar multiplication of vector1 and vector2]
         """
         scalar = 0
         for element_index in range(len(vector1)):
@@ -529,19 +521,19 @@ class Matrix():
 
     def is_matrix(self = None, other = None) -> bool:
         """
-        is_matrix [summary]
+        is_matrix [returns if the matrix is empty or not]
 
         [extended_summary]
 
         Args:
-            self ([type], optional): [description]. Defaults to None.
-            other ([type], optional): [description]. Defaults to None.
+            self ([object], optional): [if self is provided other will be ignored]. Defaults to None.
+            other ([type], optional): [must be provided if self wasnt]. Defaults to None.
 
         Raises:
-            MatrixException: [description]
+            MatrixException: [self nor other were provided]
 
         Returns:
-            bool: [description]
+            bool: [is empty]
         """
         if other:
             if isinstance(other, Matrix):
@@ -556,9 +548,8 @@ class Matrix():
 
     def __set_dims(self):
         """
-        __set_dims [summary]
+        __set_dims [calculates the dimensions of the martix and saves the result in object]
 
-        [extended_summary]
         """
         if self.is_matrix():
             self.dims = [0, 0]
@@ -571,7 +562,7 @@ class Matrix():
 
     def __reset(self):
         """
-        __reset [summary]
+        __reset [sets all variables (but matrix) of the object to None]
 
         [extended_summary]
         """
@@ -584,19 +575,18 @@ class Matrix():
 
     def is_square(self = None, matrix = None):
         """
-        is_square [summary]
+        is_square [returns if the matrix has equal dimmensions or not]
 
-        [extended_summary]
 
         Args:
-            self ([type], optional): [description]. Defaults to None.
-            matrix ([type], optional): [description]. Defaults to None.
+            self ([object], optional): [if self is provided matrix will be ignored]. Defaults to None.
+            matrix ([list], optional): [will be used if self is not provided, must be provided if self is not provided]. Defaults to None.
 
         Raises:
-            MatrixException: [description]
+            MatrixException: [if self nor matrix were provided]
 
         Returns:
-            [type]: [description]
+            [bool]:
         """
         if matrix:
             return len(matrix) == len(matrix[0])
@@ -614,15 +604,14 @@ class Matrix():
 
     def rotate(self, angle):
         """
-        rotate [summary]
+        rotate [rotate vector by the angle provided]
 
-        [extended_summary]
 
         Args:
-            angle ([type]): [description]
+            angle ([float]): [angle to rotate by]
 
         Raises:
-            MatrixException: [description]
+            MatrixException: [not supported size]
         """
 
         if self.__is_vector():
