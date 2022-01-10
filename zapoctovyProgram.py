@@ -126,10 +126,13 @@ class Matrix():
         Returns:
             list: [list of list containing inverse matrix]
         """
-        idm = Matrix(dims=[len(self.matrix), len(self.matrix)])
-        idm.id()
-        self.inverse = self.solve(extended=False, ext_matrix = idm.get_matrix())
-        return self.inverse
+        if self.__get_determinant() == 0:
+            print('unable to find inverse for a singular matrix')
+        else:
+            idm = Matrix(dims=[self.get_dims()[0], self.get_dims()[0]])
+            idm.id()
+            self.inverse = self.solve(extended=False, ext_matrix = idm.get_matrix())
+            return self.inverse
 
 
     def transpose(self):
@@ -150,7 +153,31 @@ class Matrix():
 
     def rank_calculate(self) -> int:
 
-        pass
+        if self.REF:
+            pass
+        else:
+            self.gaus_elimination()
+        for row in range(self.get_dims()[0]-1, -1, -1):
+            for col in range(self.get_dims()[1]-1, -1, -1):
+                if self.REF[row][col] != 0:
+                    self.rank = row + 1
+                    return
+
+    def get_rank(self):
+        """
+        get_rank [returns rank if it was previously calculated, else it will calculate it and return]
+
+
+        Returns:
+            [int]: [rank of the matrix]
+        """
+        if self.rank:
+            return self.rank
+        else:
+            self.rank_calculate()
+            return self.rank
+
+
 
 
     def extend(self, matrix): # extendes matrix by vector or matrix from the right side
@@ -196,14 +223,16 @@ class Matrix():
             if ext_matrix:
                 self.__set_dims()
                 self.extend(ext_matrix)
+                #print(self.matrix)
 
 
             else:
                 raise MatrixException('No matrix extension provided')
 
         self.gaus_jordan_elimination()
-
+        #print(self.RREF)
         self.matrix = [self.matrix[i][:self.get_dims()[1]] for i in range(self.get_dims()[0])]
+        #print(self.matrix)
         output = [[round(self.RREF[row][col], 5) for col in range(self.get_dims()[1], self.get_dims()[1] + len(ext_matrix[0]))] for row in range(self.get_dims()[0])]
         return output
 
@@ -211,19 +240,23 @@ class Matrix():
         """
         gaus_elimination [applies Gauss elimination on the matrix of the object and saves the resulti in self.REF. Note: original matrix remains untouched]
         """
-
         self.REF = [[self.matrix[row][col] for col in range(len(self.matrix[0]))] for row in range(len(self.matrix))]#self.matrix.copy()
-        for col in range(len(self.REF[0])): # gause elimination
-            pivot_pos = None
-            for row in range(col, len(self.REF)):
+        self.sort_by_leading_zeros()
+        srow, col = self.quick_zero_sort(0, 0)
+        pivot_pos = srow # describes the pivot row, plays role of a flag to determine the next step of gaus elimination
+        # gause elimination
+        while col != None:
+            for row in range(pivot_pos + 1, self.get_dims()[0]):
                 if self.REF[row][col] == 0:
                     continue
-                else:
-                    if pivot_pos == None:
-                        pivot_pos = row
-                        continue
 
-                    self.REF = Matrix.add_scalar_mul2row(self.REF, pivot_pos, row, -(self.REF[row][col]/self.REF[pivot_pos][col]))
+                self.REF = Matrix.add_scalar_mul2row(self.REF, pivot_pos, row, -(self.REF[row][col]/self.REF[pivot_pos][col]))
+            if pivot_pos + 1 <= self.dims[0] - 1 and col + 1 <= self.dims[1] - 1:
+                _, col = self.quick_zero_sort(pivot_pos + 1 ,col + 1 )
+                pivot_pos += 1
+
+            else:
+                break
 
 
     def gaus_jordan_elimination(self):
@@ -232,16 +265,49 @@ class Matrix():
         """
         self.gaus_elimination()
         self.RREF = [[self.REF[row][col] for col in range(len(self.REF[0]))] for row in range(len(self.REF))]#self.matrix.copy()
-        for row in range(len(self.RREF)): # setting all pivots to have value 1
-            self.RREF = Matrix.multiply_row(self.RREF, row, 1/self.RREF[row][row])
 
-        for col in range(self.get_dims()[0] - 1, -1, -1): # G-J eliomination
-            for row in range(col - 1, -1, -1):
-                self.RREF = Matrix.add_scalar_mul2row(self.RREF, col, row, -self.RREF[row][col])
+        for row in range(self.get_dims()[0]-1, -1, -1): # setting all pivots to have value 1
+            for col in range(self.get_dims()[1]-1, -1, -1):
+                if self.RREF[row][col] != 0:
+                    self.RREF = Matrix.multiply_row(self.RREF, row, 1/self.RREF[row][col])
+
+                    if row != 0:
+                        for gjrow in range(row-1, -1, -1):
+                            self.RREF = Matrix.add_scalar_mul2row(self.RREF, row, gjrow, -self.RREF[gjrow][col])
 
 
 
 
+
+    def sort_by_leading_zeros(self):
+        """
+        sort_by_leading_zeros [support function for gaus elimination: sorts rows by amount of leading zeros]
+
+        """
+        vacation = 0
+        for col in range(0, len(self.REF[0])):
+            for row in range(vacation, len(self.REF)):
+                if self.REF[row][col] != 0:
+                    self.REF[row], self.REF[vacation] = self.REF[vacation], self.REF[row]
+                    vacation += 1
+
+    def quick_zero_sort(self, r, c):
+        """
+        quick_zero_sort [support function for gous elimination: finds next pivot and moves it up to its desired position]
+
+        Args:
+            r ([int]): [row to start looking from]
+            c ([int]): [column to start looking from]
+
+        Returns:
+            [list]: [postion of the next pivot]
+        """
+        for col in range(c, self.dims[1]):
+            for row in range(r, self.dims[0]):
+                if self.REF[row][col] != 0:
+                    self.REF[row], self.REF[r] = self.REF[r], self.REF[row]
+                    return r, col
+        return [None, None]
 
 
     def multiply_row(matrix, index, scalar): #elementary row operation (multiplies i-th row with scalar)
@@ -259,7 +325,7 @@ class Matrix():
         if isinstance(matrix, Matrix):
             matrix = matrix.matrix
         for col in range(Matrix.get_dims(matrix = matrix)[1]):
-            matrix[index][col] *= scalar
+            matrix[index][col] = round(matrix[index][col]*scalar, 10)
         if isinstance(matrix, Matrix):
             return Matrix(matrix = matrix)
         else:
@@ -282,7 +348,7 @@ class Matrix():
         if isinstance(matrix, Matrix):
             matrix = matrix.matrix
         for col in range(Matrix.get_dims(matrix = matrix)[1]):
-            matrix[target_row][col] += matrix[source_row][col] * scalar
+            matrix[target_row][col] = round(matrix[target_row][col] + matrix[source_row][col] * scalar, 10)
         if isinstance(matrix, Matrix):
             return Matrix(matrix = matrix)
         else:
@@ -363,15 +429,15 @@ class Matrix():
         Returns:
             [list]: [output of the addition]
         """
-        if isinstance(matrix, Matrix):
-            matrix2 = matrix.matrix
-        elif isinstance(list):
-            pass
-        else:
-            raise MatrixException('Unsapported data format')
+        if isinstance(matrix, object):
+            matrix = matrix.matrix
 
         matrix1 = self.matrix
-        return [[matrix1[row][col] + matrix2[row][col] for col in range(len(matrix1[0]))] for row in range(len(matrix1))]
+
+        if len(matrix) == len(matrix1) and len(matrix[0]) == len(matrix1[0]):
+            self.matrix = [[matrix1[row][col] + matrix[row][col] for col in range(len(matrix1[0]))] for row in range(len(matrix1))]
+        else:
+            raise MatrixException('Matrices should be of the same size...')
 
 
 
@@ -452,14 +518,54 @@ class Matrix():
         return self.matrix
 
 
-    def print_matrix(self) -> None:
+    def print_matrix(self, rnd = 1, which = "matrix") -> None:
         """
         print_matrix [prints matrix without list breakets]
 
         """
-        for row in self.matrix:
+        if which == 'matrix':
+            if self.matrix:
+                pmatrix = self.matrix
+            else:
+                print('no matrix in object...')
+                return
+
+        elif which == 'REF':
+            if self.REF:
+                pmatrix = self.REF
+            else:
+                print('run gaus elimination first...')
+                return
+
+        elif which == 'RREF':
+            if self.RREF:
+                pmatrix = self.RREF
+            else:
+                print('run gaus-jordan elimination first...')
+                return
+
+        elif which == 'transposed':
+            if self.transposed:
+                pmatrix = self.transposed
+            else:
+                print('run gaus transpose first...')
+                return
+
+        elif which == 'inverse':
+            if self.inverse:
+                pmatrix = self.inverse
+            else:
+                print('run inverse calculation first')
+                return
+
+        for row in pmatrix:
             for element in row:
-                print(round(element, 1), end=' ')
+                if element == 0:
+                    element = 0
+                if isinstance(element, float):
+                    print(round(element, rnd), end=' ')
+                else:
+                    print(element, end=' ')
 
             print(end='\n')
 
