@@ -127,8 +127,9 @@ Metody:
         - input : Matrix object
         - Output : 2d list matice
 
-    - print_matrix(self)
-        - Popis : vypise maticu
+    - print_matrix(self, round, which)
+        - Popis : vypise maticu a zaokruhli hodnoty podla round;
+                  which urci ktoru maticu z objektu ma ukazat ('matrix', 'transposed', 'inverse', 'REF', 'RREF')
 
     - is_matrix(self = None, other = None)
         - input : Matrix object, default = None
