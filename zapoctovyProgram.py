@@ -103,7 +103,7 @@ class Matrix():
         Returns:
             list: [result in form of list of lists]
         """
-        if other.get_dims()[1] == self.get_dims()[0]:
+        if other.get_dims()[0] == self.get_dims()[1]:
             output_matrix = []
             if not other.transposed:
                 other.transpose()
@@ -724,11 +724,11 @@ class Matrix():
             if self.__is2d():
                 self.rotation_matrix = Matrix(
                                               dims = [2, 2],
-                                              matrix = [[cos(radians(angle), -sin(radians(angle)))],
-                                                        [sin(radians(angle), cos(radians(angle)))]]
+                                              matrix = [[cos(radians(angle)), -sin(radians(angle))],
+                                                        [sin(radians(angle)), cos(radians(angle))]]
                                              )
 
-                self.matrix = self.rotation_matrix.multiply_without_saving(self.matrix)
+                self.matrix = Matrix.multiply_without_saving(self.rotation_matrix, self)
                 self.__reset()
 
 
